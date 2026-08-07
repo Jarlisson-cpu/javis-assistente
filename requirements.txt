@@ -1,0 +1,47 @@
+# ============================================================
+# JARVIS - Dependências
+# Fase 0-1: Núcleo (ativas)
+# ============================================================
+pydantic>=2.6
+pyyaml>=6.0
+python-dotenv>=1.0
+
+# ---- Dev / testes ----
+pytest>=8.0
+pytest-asyncio>=0.23
+
+# ============================================================
+# Fases futuras (descomentar quando a fase correspondente começar)
+# ============================================================
+
+# --- Fase 2: Memória ---
+# chromadb
+# sentence-transformers
+
+# --- Fase 3: IA multi-modelo ---
+# anthropic
+# openai
+# google-generativeai
+# ollama
+
+# --- Fase 4: Voz ---
+pyttsx3>=2.90
+# vosk
+# sounddevice
+# piper-tts
+# SpeechRecognition
+
+# --- Fase 5: Interface ---
+# PySide6
+
+# --- Fase 6: Sistema / Automação ---
+psutil
+pyautogui
+keyboard
+mouse
+pywin32
+playwright
+
+# --- Fase 8: Integrações ---
+# python-telegram-bot
+# discord.py

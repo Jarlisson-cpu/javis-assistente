@@ -1,0 +1,81 @@
+# ============================================================
+# JARVIS - Configuração Central
+# ============================================================
+# Chaves de API e segredos NÃO ficam aqui — veja .env.example
+# ============================================================
+
+app:
+  name: "JARVIS"
+  version: "0.1.0"
+  environment: "development"  # development | production
+
+logging:
+  level: "INFO"               # DEBUG | INFO | WARNING | ERROR
+  directory: "logs"
+  max_file_size_mb: 10
+  backup_count: 5
+  console_output: true
+
+security:
+  require_confirmation_for:
+    - delete_files
+    - automation.delete_file
+    - format_disk
+    - shutdown
+    - purchases
+    - send_message
+    - send_email
+  confirmation_timeout_seconds: 30
+  default_deny_on_timeout: true
+  permissions: {}
+
+voice:
+  stt_engine: "vosk"
+  tts_engine: "pyttsx3"
+  language: "pt-BR"
+  stt_model_path: "models/vosk"
+  enable_tts: true
+  enable_stt: false
+
+memory:
+  db_path: "jarvis_memory.db"
+
+plugins:
+  directory: "plugins"
+  autoload: true
+  enabled: []          # vazio = carrega todos os plugins válidos encontrados
+  disabled: []         # nomes de plugins para ignorar
+
+# ---- Fases futuras (mantido aqui apenas para documentar o formato esperado) ----
+
+# ai:
+#   default_provider: "anthropic"
+#   routing:
+#     code: "anthropic"
+#     research: "anthropic"
+#     quick_answers: "ollama"
+#   providers:
+#     anthropic:
+#       model: "claude-sonnet-4-6"
+#     openai:
+#       model: "gpt-4.1"
+#     ollama:
+#       model: "llama3"
+#       host: "http://localhost:11434"
+
+# voice:
+#   wake_word: "jarvis"
+#   stt_engine: "vosk"          # offline
+#   tts_engine: "piper"         # offline | elevenlabs (nuvem)
+#   language: "pt-BR"
+#   interrupt_on_speech: true
+
+# memory:
+#   short_term_backend: "sqlite"
+#   vector_backend: "chromadb"
+#   database_path: "database/jarvis.db"
+#   vector_path: "database/vectors"
+
+# gui:
+#   framework: "pyside6"        # a definir na Fase 5
+#   theme: "dark"

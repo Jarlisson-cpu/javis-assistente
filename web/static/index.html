@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jarvis Web Interface</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>Jarvis</h1>
+        <p>Interface web completa para usar o assistente Jarvis no navegador.</p>
+      </div>
+      <div class="status-pill" id="status-pill">Carregando...</div>
+    </header>
+
+    <main class="app-grid">
+      <section class="panel panel-wide">
+        <div class="panel-header">
+          <h2>Conversa</h2>
+          <button id="refresh-history">Atualizar histórico</button>
+          <button id="clear-history" class="danger">Limpar histórico</button>
+        </div>
+        <div class="chat-window" id="chat-window"></div>
+        <div class="compose-box">
+          <textarea id="message-input" placeholder="Digite um comando ou pergunta para o Jarvis..." rows="2"></textarea>
+          <button id="send-message">Enviar</button>
+        </div>
+      </section>
+
+      <section class="panel panel-sidebar">
+        <div class="panel-header">
+          <h2>Permissões</h2>
+        </div>
+        <div class="permissions" id="permissions-list"></div>
+        <button id="save-permissions" class="primary">Salvar permissões</button>
+      </section>
+
+      <section class="panel panel-sidebar">
+        <div class="panel-header">
+          <h2>Voz</h2>
+        </div>
+        <div class="voice-card">
+          <button id="voice-toggle" class="primary">Ativar microfone</button>
+          <button id="speech-toggle" class="primary">Responder por voz</button>
+          <p class="voice-status" id="voice-status">Microfone desligado. Resposta por voz desligada.</p>
+        </div>
+      </section>
+
+      <section class="panel panel-sidebar">
+        <div class="panel-header">
+          <h2>Atalhos rápidos</h2>
+        </div>
+        <div class="quick-actions">
+          <button class="action-btn" data-command="buscar python">Buscar "python"</button>
+          <button class="action-btn" data-command="abrir bloco de notas">Abrir Bloco de Notas</button>
+          <button class="action-btn" data-command="abrir site google.com">Abrir Google</button>
+          <button class="action-btn" data-command="criar arquivo nota.txt : Olá do Jarvis">Criar arquivo de texto</button>
+          <button class="action-btn" data-command="ler arquivo nota.txt">Ler arquivo de texto</button>
+          <button class="action-btn" data-command="apagar arquivo nota.txt">Apagar arquivo de texto</button>
+        </div>
+      </section>
+
+      <section class="panel panel-sidebar">
+        <div class="panel-header">
+          <h2>Comandos suportados</h2>
+        </div>
+        <ul class="command-list">
+          <li><strong>buscar &lt;termo&gt;</strong> — pesquisa na web</li>
+          <li><strong>abrir &lt;app&gt;</strong> — abre aplicativos ou sites</li>
+          <li><strong>abrir site &lt;domínio&gt;</strong> — abre qualquer site como google.com</li>
+          <li><strong>perguntar &lt;sua dúvida&gt;</strong> — resposta em estilo assistente de IA</li>
+          <li><strong>criar arquivo &lt;caminho&gt; : &lt;text&gt;</strong> — salva arquivo</li>
+          <li><strong>ler arquivo &lt;caminho&gt;</strong> — mostra conteúdo</li>
+          <li><strong>apagar arquivo &lt;caminho&gt;</strong> — remove arquivo</li>
+          <li><strong>olá</strong>, <strong>ajuda</strong>, <strong>como você</strong> — respostas do Jarvis</li>
+        </ul>
+      </section>
+
+      <section class="panel panel-sidebar">
+        <div class="panel-header">
+          <h2>Informações</h2>
+        </div>
+        <div class="info-card">
+          <p><strong>Host:</strong> <span id="app-host">127.0.0.1</span></p>
+          <p><strong>Porta:</strong> <span id="app-port">8000</span></p>
+          <p><strong>Aplicação:</strong> <span id="app-name"></span></p>
+          <p><strong>Versão:</strong> <span id="app-version"></span></p>
+          <p><strong>Plugins carregados:</strong></p>
+          <ul id="plugin-list"></ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Use esta interface para controlar Jarvis e explorar os recursos que já estão disponíveis.</p>
+    </footer>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

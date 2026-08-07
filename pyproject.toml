@@ -1,0 +1,23 @@
+[project]
+name = "jarvis-assistant"
+version = "0.1.0"
+description = "Assistente de IA pessoal modular, inspirado no JARVIS da Marvel"
+requires-python = ">=3.13"
+readme = "README.md"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.black]
+line-length = 100
+target-version = ["py313"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
