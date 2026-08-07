@@ -15,8 +15,8 @@ pytest-asyncio>=0.23
 # ============================================================
 
 # --- Fase 2: Memória ---
-# chromadb
-# sentence-transformers
+chromadb
+sentence-transformers
 
 # --- Fase 3: IA multi-modelo ---
 # anthropic

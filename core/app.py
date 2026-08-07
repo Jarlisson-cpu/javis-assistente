@@ -8,7 +8,7 @@ from core.event_bus import EventBus
 from core.logger import get_logger, setup_logging
 from core.plugin_loader import PluginLoader
 import threading
-from memory.sqlite_store import SQLiteStore
+from memory import MemoryManager
 from voice.manager import VoiceManager
 from security.manager import PermissionManager, manager as global_permission_manager
 
@@ -31,7 +31,13 @@ class JarvisCore:
         self.confirmation = ConfirmationGate(self.config.security, ConsoleConfirmationProvider())
         self.plugin_loader = PluginLoader(self.config.plugins, self.event_bus)
         # memory store
-        self.memory = SQLiteStore(self.config.memory.db_path)
+        self.memory = MemoryManager(
+            db_path=self.config.memory.db_path,
+            vector_enabled=self.config.memory.vector_enabled,
+            vector_path=self.config.memory.vector_path,
+            vector_collection=self.config.memory.vector_collection,
+            embedding_model=self.config.memory.embedding_model,
+        )
         # voice manager (optional)
         try:
             self.voice = VoiceManager(self.config.voice)

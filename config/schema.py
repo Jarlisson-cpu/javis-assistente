@@ -44,6 +44,10 @@ class VoiceConfig(BaseModel):
 
 class MemoryConfig(BaseModel):
     db_path: str = "jarvis_memory.db"
+    vector_enabled: bool = False
+    vector_path: str = "database/vectors"
+    vector_collection: str = "jarvis_memory"
+    embedding_model: str = "all-MiniLM-L6-v2"
 
 
 class RootConfig(BaseModel):

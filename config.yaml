@@ -39,6 +39,10 @@ voice:
 
 memory:
   db_path: "jarvis_memory.db"
+  vector_enabled: false
+  vector_path: "database/vectors"
+  vector_collection: "jarvis_memory"
+  embedding_model: "all-MiniLM-L6-v2"
 
 plugins:
   directory: "plugins"
