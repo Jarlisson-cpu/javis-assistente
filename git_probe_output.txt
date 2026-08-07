@@ -1,0 +1,11 @@
+CMD: ['git', '--version']
+EXCEPTION: [WinError 2] O sistema não pode encontrar o arquivo especificado
+
+CMD: ['git', '-C', 'C:\\Users\\Brito\\Downloads\\jarvis-fase0-nucleo\\jarvis-assistant', 'status', '--short']
+EXCEPTION: [WinError 2] O sistema não pode encontrar o arquivo especificado
+
+CMD: ['git', '-C', 'C:\\Users\\Brito\\Downloads\\jarvis-fase0-nucleo\\jarvis-assistant', 'branch', '--show-current']
+EXCEPTION: [WinError 2] O sistema não pode encontrar o arquivo especificado
+
+CMD: ['git', '-C', 'C:\\Users\\Brito\\Downloads\\jarvis-fase0-nucleo\\jarvis-assistant', 'remote', '-v']
+EXCEPTION: [WinError 2] O sistema não pode encontrar o arquivo especificado
