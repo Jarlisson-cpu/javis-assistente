@@ -52,8 +52,11 @@ class EventBus:
             logger.debug("Evento '%s' publicado sem handlers registrados", event.name)
             return
 
+        print(f"[event_bus] Publicando evento '{event.name}' para {len(handlers)} handler(s)")
         for handler in handlers:
+            print(f"[event_bus] Chamando handler {handler} para evento '{event.name}'")
             result = handler(event)
+            print(f"[event_bus] Handler {handler} retornou {result!r}")
             if inspect.isawaitable(result):
                 await result
 
@@ -66,6 +69,11 @@ class EventBus:
             return
 
         if loop.is_running():
-            loop.call_soon_threadsafe(asyncio.create_task, self.publish(event))
-        else:
-            loop.run_until_complete(self.publish(event))
+            logger.debug(
+                "publish_sync called from within a running loop for event '%s'; scheduling async publish",
+                event.name,
+            )
+            asyncio.create_task(self.publish(event))
+            return
+
+        loop.run_until_complete(self.publish(event))

@@ -31,6 +31,19 @@ async def test_publish_calls_async_handler() -> None:
     assert received == [{"value": 1}]
 
 
+def test_publish_sync_calls_async_handler() -> None:
+    bus = EventBus()
+    received = []
+
+    async def handler(event: Event) -> None:
+        received.append(event.payload)
+
+    bus.subscribe("ping", handler)
+    bus.publish_sync(Event(name="ping", payload={"value": 1}))
+
+    assert received == [{"value": 1}]
+
+
 @pytest.mark.asyncio
 async def test_publish_without_handlers_does_not_raise() -> None:
     bus = EventBus()
