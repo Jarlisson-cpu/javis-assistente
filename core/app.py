@@ -29,6 +29,7 @@ class JarvisCore:
 
         self.event_bus = EventBus()
         self.confirmation = ConfirmationGate(self.config.security, ConsoleConfirmationProvider())
+        self.event_bus.confirmation_gate = self.confirmation
         self.plugin_loader = PluginLoader(self.config.plugins, self.event_bus)
         # memory store
         self.memory = MemoryManager(
@@ -75,13 +76,15 @@ class JarvisCore:
         self.event_bus.subscribe("system_message", _persist)
 
         if self.voice:
-            def _speak(event):
-                try:
-                    payload = event.payload or {}
-                    text = payload.get("text", "")
-                    if text:
-                        threading.Thread(target=self.voice.speak, args=(text,), daemon=True).start()
-                except Exception:
-                    logger.exception("Falha ao reproduzir voz para system_message")
+            self.event_bus.subscribe("system_message", self._speak_system_message)
 
-            self.event_bus.subscribe("system_message", _speak)
+    def _speak_system_message(self, event) -> None:
+        try:
+            if not self.permission_manager or not self.permission_manager.is_allowed("voice.tts"):
+                return
+            payload = event.payload or {}
+            text = payload.get("text", "")
+            if text:
+                threading.Thread(target=self.voice.speak, args=(text,), daemon=True).start()
+        except Exception:
+            logger.exception("Falha ao reproduzir voz para system_message")

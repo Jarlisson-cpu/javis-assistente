@@ -7,7 +7,7 @@ from core.plugin_loader import Plugin
 from core.event_bus import Event
 from core.logger import get_logger
 
-from security.manager import manager as permission_manager
+import security.manager as security_manager
 
 logger = get_logger("plugin.open_app")
 
@@ -43,7 +43,7 @@ class OpenAppPlugin(Plugin):
                 )
                 return
 
-            if permission_manager and not permission_manager.is_allowed("automation.open_app"):
+            if security_manager.manager and not security_manager.manager.is_allowed("automation.open_app"):
                 logger.info("Ação bloqueada por política: automation.open_app")
                 self._event_bus.publish_sync(
                     Event(name="system_message", payload={"text": "Ação de abrir aplicações bloqueada pela política."}, source="jarvis")

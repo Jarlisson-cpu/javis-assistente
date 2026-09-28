@@ -39,14 +39,33 @@ class ChatAIPlugin(Plugin):
             await self._event_bus.publish(Event(name="system_message", payload={"text": response}, source="jarvis"))
 
     def _is_command(self, normalized: str) -> bool:
+        if normalized in ("planejar", "revisar", "explicar"):
+            return True
+
         command_prefixes = (
             "buscar ",
+            "ler site ",
+            "ler imagem ",
+            "rascunho email ",
+            "buscar música ",
+            "buscar vídeo ",
+            "buscar video ",
+            "pausar mídia",
+            "tocar mídia",
+            "próxima música",
+            "musica seguinte",
+            "música anterior",
+            "aumentar volume",
+            "diminuir volume",
             "abrir ",
             "abre ",
             "abra ",
             "criar arquivo ",
             "ler arquivo ",
             "apagar arquivo ",
+            "planejar ",
+            "revisar ",
+            "explicar ",
         )
         if any(normalized.startswith(prefix) for prefix in command_prefixes):
             return True

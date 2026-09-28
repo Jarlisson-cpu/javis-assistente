@@ -19,6 +19,7 @@ logging:
 security:
   require_confirmation_for:
     - delete_files
+    - file.delete
     - automation.delete_file
     - format_disk
     - shutdown
@@ -34,6 +35,8 @@ voice:
   tts_engine: "pyttsx3"
   language: "pt-BR"
   stt_model_path: "models/vosk"
+  stt_sample_rate: 16000
+  wake_word: "jarvis"
   enable_tts: true
   enable_stt: false
 

@@ -14,6 +14,11 @@ def test_loads_example_plugin() -> None:
 
     names = [p.name for p in plugins]
     assert "example_greeting" in names
+    assert "specialized_agents" in names
+    assert "browser_reader" in names
+    assert "vision_ocr" in names
+    assert "communication_draft" in names
+    assert "media_search" in names
 
 
 def test_disabled_plugin_is_skipped() -> None:

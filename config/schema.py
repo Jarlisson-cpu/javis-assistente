@@ -38,6 +38,8 @@ class VoiceConfig(BaseModel):
     tts_engine: str = "pyttsx3"
     language: str = "pt-BR"
     stt_model_path: str = "models/vosk"
+    stt_sample_rate: int = 16000
+    wake_word: str = "jarvis"
     enable_tts: bool = True
     enable_stt: bool = False
 

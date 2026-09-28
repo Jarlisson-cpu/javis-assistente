@@ -13,6 +13,11 @@ try:
 except ImportError:  # pragma: no cover
     openai = None
 
+try:
+    import google.generativeai as google_generativeai
+except ImportError:  # pragma: no cover
+    google_generativeai = None
+
 logger = logging.getLogger("ai")
 
 
@@ -53,6 +58,28 @@ class OpenAIProvider(AIProvider):
         return answer or ""
 
 
+class GoogleGeminiProvider(AIProvider):
+    def __init__(self, model: str = "gemini-1.5-flash") -> None:
+        if google_generativeai is None:
+            raise ImportError("google-generativeai não está instalado. Instale `google-generativeai` para usar este provedor.")
+        self.model = model
+
+    def get_response(self, text: str, context: dict[str, Any] | None = None) -> str:
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise RuntimeError("GOOGLE_API_KEY não encontrado nas variáveis de ambiente.")
+
+        google_generativeai.configure(api_key=api_key)
+        model = google_generativeai.GenerativeModel(self.model)
+        prompt = text
+
+        if context and context.get("system_prompt"):
+            prompt = f"{context['system_prompt']}\n\n{text}"
+
+        response = model.generate_content(prompt)
+        return getattr(response, "text", "").strip() or ""
+
+
 class FallbackAIProvider(AIProvider):
     def get_response(self, text: str, context: dict[str, Any] | None = None) -> str:
         normalized = text.lower()
@@ -69,7 +96,7 @@ class FallbackAIProvider(AIProvider):
 
         return (
             "Ainda não tenho um modelo de IA externo configurado, mas posso responder perguntas básicas. "
-            "Se você deseja respostas mais avançadas, configure OPENAI_API_KEY no ambiente. "
+            "Se você deseja respostas mais avançadas, configure OPENAI_API_KEY ou GOOGLE_API_KEY no ambiente. "
             "Pergunte outra coisa ou peça para abrir um site."
         )
 
@@ -86,6 +113,16 @@ class AIManager:
                 return OpenAIProvider(model=self.model)
             except Exception as exc:
                 logger.warning("Falha ao inicializar OpenAIProvider: %s", exc)
+
+        if self.provider_name == "gemini" and google_generativeai is not None and os.getenv("GOOGLE_API_KEY"):
+            try:
+                return GoogleGeminiProvider(model=self.model)
+            except Exception as exc:
+                logger.warning("Falha ao inicializar GoogleGeminiProvider: %s", exc)
+
+        if self.provider_name == "gemini" and google_generativeai is None:
+            logger.warning("gemini solicitado, mas google-generativeai não está instalado.")
+
         logger.info("Usando fallback de IA, provedor solicitado: %s", self.provider_name)
         return FallbackAIProvider()
 

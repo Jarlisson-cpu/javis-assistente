@@ -7,7 +7,6 @@ from tkinter import scrolledtext, simpledialog, messagebox
 from core.app import JarvisCore
 from core.event_bus import Event
 from core.logger import get_logger
-from security.manager import manager as permission_manager
 from security.permissions import registry as permission_registry
 
 
@@ -125,7 +124,8 @@ class JarvisGUI:
             return
         self.entry.delete(0, tk.END)
         # publish event synchronously
-        self.core.event_bus.publish_sync(Event(name="user_message", payload={"text": text}, source="gui"))
+        event = Event(name="user_message", payload={"text": text}, source="gui")
+        threading.Thread(target=self.core.event_bus.publish_sync, args=(event,), daemon=True).start()
         # also refresh history shortly after sending
         try:
             self.root.after(100, self.load_history)
@@ -165,13 +165,14 @@ class JarvisGUI:
                 except Exception:
                     return
                 self.core.memory.clear_messages()
-                self.load_history()
+                self.root.after(0, self.load_history)
             except Exception:
                 pass
 
         threading.Thread(target=ask_and_clear, daemon=True).start()
 
     def open_permissions_window(self) -> None:
+        permission_manager = self.core.permission_manager
         if not permission_manager:
             messagebox.showinfo("Permissões", "O gerenciador de permissões não está disponível.")
             return

@@ -22,27 +22,35 @@
 | `database/` | SQLite + armazenamento vetorial | 2 |
 | `memory/` | memória de curto/longo prazo sobre `database/` | 2 |
 | `ai/` | abstração multi-modelo e roteamento por tarefa | 3 |
-| `voice/` | wake word, STT, TTS, streaming | 4 |
-| `gui/` | dashboard futurista | 5 |
-| `automation/`, `system/`, `terminal/` | controle do Windows, mouse/teclado, shell | 6 |
+| `plugins/specialized_agents/` | agentes de planejamento, revisão e explicação via AIManager | 7 |
+| `voice/` | STT local Vosk, TTS pyttsx3, palavra de ativação no modo terminal | 4 |
+| `gui/`, `web/` | GUI Tkinter e dashboard web | 5 |
+| `automation/`, plugins | automação básica do Windows, mouse/teclado e arquivos com permissões | 6 |
+| `communication/`, `media/` | rascunho de e-mail local, busca de mídia e teclas de controle do Windows | 8 |
 | `skills/` | comandos de alto nível expostos ao usuário | 6+ |
-| `vision/` | OCR, leitura de tela, reconhecimento de imagem | 8 |
-| `browser/` | automação de navegador (Playwright) | 8 |
-| `security/` | malware, firewall, cofre de arquivos | 8 |
+| `vision/` | OCR local de arquivos de imagem (Pillow + Tesseract) | 8 |
+| `browser/` | leitura de páginas públicas via Playwright com bloqueio de destinos locais | 8 |
+| `security/` | permissões, confirmação destrutiva, autenticação bearer e proteções HTTP | 6, 9 |
 | `plugins/` | extensões de terceiros/pessoais | contínuo |
 | `utils/` | utilitários compartilhados | contínuo |
 | `logs/` | saída do logging (não é código) | — |
 
-## Por que GUI, TTS e provedor de IA ficaram em aberto
+## Decisões de implementação
 
-Essas três escolhas **não bloqueiam** o núcleo: cada uma vira uma implementação
-isolada atrás de uma interface (`ConfirmationProvider` hoje; `AIProvider` e
-`TTSEngine` nas Fases 3-4), conectada via `event_bus` e `config.yaml`. Dá para
-trocar PySide6 por uma interface web, ou TTS offline por nuvem, sem tocar no
-núcleo. As decisões concretas ficam para as Fases 3, 4 e 5 — o núcleo entregue
-aqui já funciona e é testado independentemente delas.
+Os módulos ficam desacoplados atrás de interfaces e configuração. O STT usa
+Vosk local, o TTS usa pyttsx3 e o modo de voz é ativado explicitamente com
+`--voice`; a palavra de ativação é reconhecida no áudio capturado, sem detecção
+contínua em hardware dedicado. A GUI desktop usa Tkinter, e também há dashboard
+web. Trocar essas escolhas não exige acoplar os módulos ao núcleo.
 
-## Fluxo de eventos (visão geral, a partir da Fase 4+)
+O servidor web atende apenas o loopback por padrão. `JARVIS_WEB_TOKEN` protege os
+endpoints API via bearer; hosts externos exigem token com ao menos 32 caracteres
+e certificado TLS via `JARVIS_TLS_CERTFILE` e `JARVIS_TLS_KEYFILE`. O dashboard
+solicita o token e o guarda em `sessionStorage`. Isso não implementa identidade
+de usuário ou roles; limites de entrada e TLS não substituem revisão de acesso
+para produção.
+
+## Fluxo de eventos
 
 ```
 voz/texto do usuário
@@ -55,7 +63,7 @@ voz/texto do usuário
         └──► automation/  (executa a ação, passando por confirmation.py se destrutiva)
                 │
                 ▼
-        event_bus.publish("jarvis_response")
+              event_bus.publish("system_message")
                 │
                 ├──► voice/  (fala a resposta)
                 └──► gui/    (atualiza o dashboard)

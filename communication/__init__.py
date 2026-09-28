@@ -1,0 +1,1 @@
+"""Integrações de comunicação que exigem ação explícita do usuário."""

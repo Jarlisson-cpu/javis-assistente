@@ -2,8 +2,10 @@ from pathlib import Path
 
 from core.plugin_loader import Plugin
 from core.event_bus import Event
+from core.confirmation import DestructiveAction
+from core.exceptions import ConfirmationDenied
 from core.logger import get_logger
-from security.manager import manager as permission_manager
+import security.manager as security_manager
 
 logger = get_logger("plugin.file_manager")
 
@@ -19,9 +21,10 @@ class FileManagerPlugin(Plugin):
 
     def setup(self, event_bus) -> None:
         self._event_bus = event_bus
+        self._confirmation = getattr(event_bus, "confirmation_gate", None)
         event_bus.subscribe("user_message", self._on_user_message)
 
-    def _on_user_message(self, event: Event) -> None:
+    async def _on_user_message(self, event: Event) -> None:
         payload = event.payload or {}
         text = (payload.get("text") or "").strip().lower()
 
@@ -30,7 +33,7 @@ class FileManagerPlugin(Plugin):
         elif text.startswith("criar arquivo "):
             self._write_file_request(text[len("criar arquivo "):].strip())
         elif text.startswith("apagar arquivo "):
-            self._delete_file(text[len("apagar arquivo "):].strip())
+            await self._delete_file(text[len("apagar arquivo "):].strip())
 
     def _normalize_path(self, path: str) -> Path | None:
         project_root = _get_project_root()
@@ -47,7 +50,7 @@ class FileManagerPlugin(Plugin):
         self._event_bus.publish_sync(Event(name="system_message", payload={"text": message}, source="jarvis"))
 
     def _read_file(self, path: str) -> None:
-        if permission_manager and not permission_manager.is_allowed("file.read"):
+        if security_manager.manager and not security_manager.manager.is_allowed("file.read"):
             self._publish_system("Leitura de arquivos bloqueada pela política.")
             return
 
@@ -65,7 +68,7 @@ class FileManagerPlugin(Plugin):
             self._publish_system(f"Falha ao ler o arquivo: {path}")
 
     def _write_file_request(self, rest: str) -> None:
-        if permission_manager and not permission_manager.is_allowed("file.write"):
+        if security_manager.manager and not security_manager.manager.is_allowed("file.write"):
             self._publish_system("Escrita de arquivos bloqueada pela política.")
             return
 
@@ -88,8 +91,8 @@ class FileManagerPlugin(Plugin):
             logger.exception("Erro ao escrever arquivo %s", path_part)
             self._publish_system(f"Falha ao salvar o arquivo: {path_part}")
 
-    def _delete_file(self, path: str) -> None:
-        if permission_manager and not permission_manager.is_allowed("file.delete"):
+    async def _delete_file(self, path: str) -> None:
+        if security_manager.manager and not security_manager.manager.is_allowed("file.delete"):
             self._publish_system("Exclusão de arquivos bloqueada pela política.")
             return
 
@@ -99,8 +102,16 @@ class FileManagerPlugin(Plugin):
             return
 
         try:
+            if self._confirmation is None:
+                self._publish_system("Exclusão cancelada: confirmação indisponível.")
+                return
+            await self._confirmation.confirm(
+                DestructiveAction(key="file.delete", description=f"Apagar o arquivo {path}")
+            )
             file_path.unlink()
             self._publish_system(f"Arquivo apagado: {path}")
+        except ConfirmationDenied:
+            self._publish_system(f"Exclusão cancelada: {path}")
         except Exception:
             logger.exception("Erro ao apagar arquivo %s", path)
             self._publish_system(f"Falha ao apagar o arquivo: {path}")

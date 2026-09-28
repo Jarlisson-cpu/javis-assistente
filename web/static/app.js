@@ -21,14 +21,32 @@ function apiUrl(path) {
   return `${path}`;
 }
 
+async function authorizedFetch(path, options = {}) {
+  const headers = new Headers(options.headers || {});
+  let token = sessionStorage.getItem("jarvisApiToken") || "";
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const response = await fetch(apiUrl(path), { ...options, headers });
+    if (response.status !== 401 || attempt > 0) {
+      if (response.status === 401) sessionStorage.removeItem("jarvisApiToken");
+      return response;
+    }
+
+    token = window.prompt("Token de acesso do JARVIS:") || "";
+    if (!token) return response;
+    sessionStorage.setItem("jarvisApiToken", token);
+  }
+}
+
 async function apiGet(path) {
-  const res = await fetch(apiUrl(path));
+  const res = await authorizedFetch(path);
   if (!res.ok) throw new Error(`Erro ${res.status}`);
   return res.json();
 }
 
 async function apiPost(path, data) {
-  const res = await fetch(apiUrl(path), {
+  const res = await authorizedFetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

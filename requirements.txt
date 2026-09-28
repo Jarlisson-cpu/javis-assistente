@@ -11,7 +11,7 @@ pytest>=8.0
 pytest-asyncio>=0.23
 
 # ============================================================
-# Fases futuras (descomentar quando a fase correspondente começar)
+# Dependências opcionais das integrações. Algumas também exigem programas do sistema.
 # ============================================================
 
 # --- Fase 2: Memória ---
@@ -21,13 +21,13 @@ sentence-transformers
 # --- Fase 3: IA multi-modelo ---
 # anthropic
 # openai
-# google-generativeai
+google-generativeai
 # ollama
 
 # --- Fase 4: Voz ---
 pyttsx3>=2.90
-# vosk
-# sounddevice
+vosk>=0.3.45
+sounddevice>=0.4.6
 # piper-tts
 # SpeechRecognition
 
@@ -40,8 +40,10 @@ pyautogui
 keyboard
 mouse
 pywin32
-playwright
 
-# --- Fase 8: Integrações ---
+# --- Fase 8: Browser, OCR e integrações locais ---
+playwright
+Pillow>=10.0
+pytesseract>=0.3.10
 # python-telegram-bot
 # discord.py

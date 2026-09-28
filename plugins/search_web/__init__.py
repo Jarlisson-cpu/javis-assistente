@@ -3,6 +3,7 @@ import urllib.parse
 from core.plugin_loader import Plugin
 from core.event_bus import Event
 from core.logger import get_logger
+import security.manager as security_manager
 
 logger = get_logger("plugin.search_web")
 
@@ -22,8 +23,19 @@ class SearchWebPlugin(Plugin):
             text = (payload.get("text") or "").strip()
             if not text.lower().startswith("buscar "):
                 return
+            if text.lower().startswith(("buscar música ", "buscar musica ", "buscar vídeo ", "buscar video ")):
+                return
             query = text[len("buscar ") :].strip()
             if not query:
+                return
+            if security_manager.manager and not security_manager.manager.is_allowed("search.web"):
+                self._event_bus.publish_sync(
+                    Event(
+                        name="system_message",
+                        payload={"text": "Busca na web bloqueada pela política de permissões."},
+                        source="jarvis",
+                    )
+                )
                 return
             url = "https://www.bing.com/search?q=" + urllib.parse.quote_plus(query)
             webbrowser.open_new_tab(url)
