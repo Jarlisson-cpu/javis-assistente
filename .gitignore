@@ -10,3 +10,9 @@ database/vectors/
 .mypy_cache/
 .ruff_cache/
 *.egg-info/
+
+# Arquivos gerados em execução/testes
+jarvis_memory.db
+git_probe_output.txt
+test.txt
+terminal_write_test.txt
