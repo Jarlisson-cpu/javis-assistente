@@ -6,7 +6,7 @@
 
 app:
   name: "JARVIS"
-  version: "0.1.0"
+  version: "1.0.0"
   environment: "development"  # development | production
 
 logging:
@@ -14,9 +14,10 @@ logging:
   directory: "logs"
   max_file_size_mb: 10
   backup_count: 5
-  console_output: true
+  console_output: false       # true para ver o log também no terminal
 
 security:
+  # ações que SEMPRE pedem "sim" antes de executar (por voz, terminal, GUI ou web)
   require_confirmation_for:
     - delete_files
     - file.delete
@@ -26,19 +27,35 @@ security:
     - purchases
     - send_message
     - send_email
+    - system.shutdown
+    - system.restart
+    - system.sleep
+    - terminal.run
+    - notes.clear
   confirmation_timeout_seconds: 30
   default_deny_on_timeout: true
+  # valores fixos de permissão (os alterados pela GUI/web ficam em permissions_file)
   permissions: {}
+  permissions_file: "data/permissions.json"
 
 voice:
-  stt_engine: "vosk"
-  tts_engine: "pyttsx3"
+  stt_engine: "auto"          # auto (Vosk se houver modelo, senão Google) | vosk | google
+  tts_engine: "auto"          # auto (pyttsx3, senão voz nativa do Windows) | pyttsx3 | windows
   language: "pt-BR"
   stt_model_path: "models/vosk"
   stt_sample_rate: 16000
   wake_word: "jarvis"
+  wake_word_aliases: ["jarvis", "jarbas", "jarves", "javis", "djarvis"]
   enable_tts: true
-  enable_stt: false
+  enable_stt: false           # ligado automaticamente por --voice
+  tts_rate: 190
+  tts_voice: ""               # parte do nome da voz (ex.: "Maria"); vazio = primeira voz pt-BR
+  speak_max_chars: 600
+  listen_seconds: 6           # quanto tempo esperar alguém começar a falar
+  phrase_seconds: 15          # duração máxima de uma frase
+  silence_seconds: 0.9        # silêncio que encerra a frase
+  conversation_timeout_seconds: 25  # após "Jarvis", segue ouvindo sem precisar repetir o nome
+  beep: true
 
 memory:
   db_path: "jarvis_memory.db"
@@ -47,42 +64,18 @@ memory:
   vector_collection: "jarvis_memory"
   embedding_model: "all-MiniLM-L6-v2"
 
+users:
+  default_user: ""            # usuário local (terminal/voz/GUI); vazio = único usuário ou primeiro admin
+  require_password_locally: false
+  web_login_required: true    # com usuários cadastrados, a interface web pede login
+  session_hours: 12
+
+ai:
+  provider: "auto"            # auto | anthropic | openai | gemini | offline
+  model: ""                   # vazio = padrão do provedor (Claude: claude-opus-5-5)
+
 plugins:
   directory: "plugins"
   autoload: true
   enabled: []          # vazio = carrega todos os plugins válidos encontrados
   disabled: []         # nomes de plugins para ignorar
-
-# ---- Fases futuras (mantido aqui apenas para documentar o formato esperado) ----
-
-# ai:
-#   default_provider: "anthropic"
-#   routing:
-#     code: "anthropic"
-#     research: "anthropic"
-#     quick_answers: "ollama"
-#   providers:
-#     anthropic:
-#       model: "claude-sonnet-4-6"
-#     openai:
-#       model: "gpt-4.1"
-#     ollama:
-#       model: "llama3"
-#       host: "http://localhost:11434"
-
-# voice:
-#   wake_word: "jarvis"
-#   stt_engine: "vosk"          # offline
-#   tts_engine: "piper"         # offline | elevenlabs (nuvem)
-#   language: "pt-BR"
-#   interrupt_on_speech: true
-
-# memory:
-#   short_term_backend: "sqlite"
-#   vector_backend: "chromadb"
-#   database_path: "database/jarvis.db"
-#   vector_path: "database/vectors"
-
-# gui:
-#   framework: "pyside6"        # a definir na Fase 5
-#   theme: "dark"

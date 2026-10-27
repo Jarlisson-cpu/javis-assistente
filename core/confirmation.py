@@ -53,6 +53,10 @@ class ConfirmationGate:
         self._config = config
         self._provider = provider
 
+    def set_provider(self, provider: ConfirmationProvider) -> None:
+        """Troca a forma de perguntar (terminal, voz, GUI ou web)."""
+        self._provider = provider
+
     async def confirm(self, action: DestructiveAction) -> None:
         """Levanta `ConfirmationDenied`/`ConfirmationTimeout` se não for confirmada.
 

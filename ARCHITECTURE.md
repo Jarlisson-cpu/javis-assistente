@@ -2,79 +2,90 @@
 
 ## Princípios
 
-- **Baixo acoplamento**: módulos (`voice`, `ai`, `gui`, `automation`...) nunca se
-  importam diretamente. Toda comunicação passa pelo `core.event_bus`.
-- **Inversão de dependência**: o núcleo (`core`) não conhece PyQt, Whisper,
-  Anthropic ou qualquer biblioteca específica — essas escolhas ficam isoladas em
-  cada módulo, atrás de interfaces.
+- **Baixo acoplamento**: módulos (`voice`, `ai`, `gui`, `system`...) não se
+  importam diretamente para conversar; a comunicação passa pelo `core.event_bus`.
+- **Uma definição, três usos**: cada comando é uma `Skill` registrada uma vez em
+  `skills.registry` e funciona por texto, por voz e como ferramenta do agente de IA.
+- **Segurança por padrão**: toda skill declara a permissão que exige; as
+  destrutivas declaram uma chave de confirmação. O `SkillExecutor` aplica as duas
+  regras antes de executar — não há caminho que pule a checagem.
 - **Plugins por convenção**: qualquer pasta em `plugins/` com uma classe `Plugin`
-  é carregada automaticamente, sem registro manual.
-- **Segurança por padrão**: ações destrutivas passam pelo
-  `core.confirmation.ConfirmationGate` antes de executar, configurável em
-  `config.yaml → security.require_confirmation_for`.
+  é carregada automaticamente.
 
 ## Módulos
 
-| Pasta | Responsabilidade | Fase |
-|---|---|---|
-| `core/` | config, logging, event bus, plugins, confirmação | 0-1 |
-| `config/` | schema de configuração (Pydantic) | 0 |
-| `database/` | SQLite + armazenamento vetorial | 2 |
-| `memory/` | memória de curto/longo prazo sobre `database/` | 2 |
-| `ai/` | abstração multi-modelo e roteamento por tarefa | 3 |
-| `plugins/specialized_agents/` | agentes de planejamento, revisão e explicação via AIManager | 7 |
-| `voice/` | STT local Vosk, TTS pyttsx3, palavra de ativação no modo terminal | 4 |
-| `gui/`, `web/` | GUI Tkinter e dashboard web | 5 |
-| `automation/`, plugins | automação básica do Windows, mouse/teclado e arquivos com permissões | 6 |
-| `communication/`, `media/` | rascunho de e-mail local, busca de mídia e teclas de controle do Windows | 8 |
-| `skills/` | comandos de alto nível expostos ao usuário | 6+ |
-| `vision/` | OCR local de arquivos de imagem (Pillow + Tesseract) | 8 |
-| `browser/` | leitura de páginas públicas via Playwright com bloqueio de destinos locais | 8 |
-| `security/` | permissões, confirmação destrutiva, autenticação bearer e proteções HTTP | 6, 9 |
-| `plugins/` | extensões de terceiros/pessoais | contínuo |
-| `utils/` | utilitários compartilhados | contínuo |
-| `logs/` | saída do logging (não é código) | — |
+| Pasta | Responsabilidade |
+|---|---|
+| `core/` | config, logging, event bus (com isolamento de falhas), plugins, confirmação, normalização de texto (`text.py`) |
+| `config/` | schema Pydantic de `config.yaml` |
+| `skills/` | `Skill`, `SkillRegistry`, `SkillExecutor` (permissão + confirmação) e `SkillRouter` |
+| `system/` | `SystemController`: volume, brilho, energia, janelas, teclado, apps, status, tema, clipboard, pastas, terminal |
+| `users/` | contas (PBKDF2), sessões web e usuário ativo da sessão local |
+| `voice/` | `VoiceManager` (STT Vosk/Google, TTS pyttsx3/Windows) e `VoiceAssistant` (palavra de ativação, modo conversa, confirmação falada) |
+| `ai/` | provedores Claude, OpenAI, Gemini e offline; laço de tool use |
+| `memory/` | histórico SQLite (por usuário), notas e memória vetorial opcional (ChromaDB) |
+| `security/` | registro de permissões (com padrões) e gerenciador persistente |
+| `gui/`, `web/` | app Tkinter e painel web (login, confirmações, microfone do navegador) |
+| `browser/`, `vision/`, `communication/`, `media/` | leitura de sites, OCR, rascunho de e-mail, busca e teclas de mídia |
+| `plugins/` | `notebook_control`, `productivity`, `open_app_action`, `search_web`, `chat_ai`, agentes e outros |
 
-## Decisões de implementação
-
-Os módulos ficam desacoplados atrás de interfaces e configuração. O STT usa
-Vosk local, o TTS usa pyttsx3 e o modo de voz é ativado explicitamente com
-`--voice`; a palavra de ativação é reconhecida no áudio capturado, sem detecção
-contínua em hardware dedicado. A GUI desktop usa Tkinter, e também há dashboard
-web. Trocar essas escolhas não exige acoplar os módulos ao núcleo.
-
-O servidor web atende apenas o loopback por padrão. `JARVIS_WEB_TOKEN` protege os
-endpoints API via bearer; hosts externos exigem token com ao menos 32 caracteres
-e certificado TLS via `JARVIS_TLS_CERTFILE` e `JARVIS_TLS_KEYFILE`. O dashboard
-solicita o token e o guarda em `sessionStorage`. Isso não implementa identidade
-de usuário ou roles; limites de entrada e TLS não substituem revisão de acesso
-para produção.
-
-## Fluxo de eventos
+## Fluxo de uma mensagem
 
 ```
-voz/texto do usuário
-        │
+voz (VoiceAssistant) / terminal / GUI / web
+        │  event_bus.publish("user_message")
         ▼
-   event_bus.publish("user_message")
-        │
-        ├──► ai/          (decide o que fazer, qual modelo usar)
-        ├──► memory/      (registra contexto)
-        └──► automation/  (executa a ação, passando por confirmation.py se destrutiva)
-                │
-                ▼
-              event_bus.publish("system_message")
-                │
-                ├──► voice/  (fala a resposta)
-                └──► gui/    (atualiza o dashboard)
+ 1. memória grava a mensagem (com o usuário)
+ 2. SkillRouter: o texto normalizado casa com alguma Skill?
+        └─ sim → SkillExecutor (permissão → confirmação → handler) → "system_message"
+ 3. plugins legados por prefixo (abrir, buscar, ler site...) — ignoram o que já é skill
+ 4. chat_ai: não é comando?
+        ├─ Claude/OpenAI → agente com todas as skills como ferramentas (passam pelo mesmo SkillExecutor)
+        ├─ Gemini → resposta em texto
+        └─ offline → resposta local + "você quis dizer ...?"
+        ▼
+ "system_message" → memória, voz (TTS), terminal, GUI, web
 ```
 
-## Convenção para novos plugins
+## Como criar um comando novo
 
-1. Crie uma pasta em `plugins/meu_plugin/`.
-2. Implemente uma classe que herde de `core.plugin_loader.Plugin`, com `name`,
-   `version`, `description` e o método `setup(event_bus)`.
-3. Pronto — é carregada automaticamente no próximo `python main.py` (a menos que
-   esteja em `plugins.disabled` no `config.yaml`).
+```python
+from core.plugin_loader import Plugin
+from skills import Skill, registry
 
-Veja `plugins/example_greeting/` como modelo.
+
+class MeuPlugin(Plugin):
+    name = "meu_plugin"
+
+    def setup(self, event_bus):
+        registry.register(
+            Skill(
+                name="cafe.pedir",
+                description="Abre o site da cafeteria.",          # o agente de IA lê isto
+                patterns=[r"(?:quero|pede) (?:um )?cafe(?: (?P<tipo>.+))?"],  # texto normalizado
+                parameters={"tipo": "Tipo de café (opcional)"},
+                handler=lambda p: f"Pedindo um café {p.get('tipo', 'coado')}.",
+                permission="automation.open_app",
+                examples=["quero um café expresso"],
+                category="diversos",
+            )
+        )
+```
+
+Os padrões casam contra o texto **normalizado** (minúsculo, sem acentos, sem
+pontuação, sem "por favor"/"Jarvis"). Use `raw_params` para recuperar o trecho
+original com maiúsculas e acentos (ex.: texto a digitar). Plugins que precisam
+do núcleo (banco, usuários) implementam `attach_core(core)`.
+
+## Decisões
+
+- **Teclas virtuais para volume** (2% por tecla) em vez de APIs COM: funcionam
+  em qualquer Windows sem dependências extras.
+- **Brilho via WMI**: funciona em telas internas de notebooks; monitores externos
+  geralmente não aceitam, e o JARVIS avisa.
+- **Fechar apps com `taskkill` sem `/F`**: o app recebe um pedido normal de
+  fechamento e pode perguntar se você quer salvar.
+- **TTS numa thread dedicada**: o SAPI/pyttsx3 não é thread-safe; uma fila
+  serializa as falas e o modo voz espera a fala terminar antes de ouvir de novo.
+- **Claude com `fallbacks: "default"`**: se o modelo principal recusar por
+  política, a própria API refaz o pedido com um modelo alternativo.

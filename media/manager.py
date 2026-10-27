@@ -14,6 +14,8 @@ class MediaManager:
         "previous": 0xB1,
         "volume_up": 0xAF,
         "volume_down": 0xAE,
+        "mute": 0xAD,
+        "stop": 0xB2,
     }
 
     def __init__(

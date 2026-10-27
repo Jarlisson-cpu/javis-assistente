@@ -14,7 +14,7 @@ logger = get_logger("plugin.media_search")
 class MediaSearchPlugin(Plugin):
     name = "media_search"
     version = "0.1.0"
-    description = "Pesquisa música e vídeo no navegador."
+    description = "Pesquisa música e vídeo no YouTube."
 
     def __init__(self) -> None:
         self._media = MediaManager()
@@ -27,28 +27,13 @@ class MediaSearchPlugin(Plugin):
     async def _on_user_message(self, event: Event) -> None:
         text = str((event.payload or {}).get("text", "")).strip()
         normalized = text.lower()
-        media_controls = {
-            "pausar mídia": "play_pause",
-            "tocar mídia": "play_pause",
-            "próxima música": "next",
-            "musica seguinte": "next",
-            "música anterior": "previous",
-            "aumentar volume": "volume_up",
-            "diminuir volume": "volume_down",
-        }
-        control_action = media_controls.get(normalized)
-        if control_action:
-            if not security_manager.manager or not security_manager.manager.is_allowed("media.control"):
-                await self._reply("Controle de mídia bloqueado pela política de permissões.")
-                return
-            try:
-                await asyncio.to_thread(self._media.control, control_action)
-                await self._reply("Controle de mídia enviado ao Windows.")
-            except Exception as exc:
-                await self._reply(f"Não consegui controlar a mídia: {exc}")
-            return
-
-        commands = (("buscar música ", "music"), ("buscar vídeo ", "video"), ("buscar video ", "video"))
+        # tocar/pausar/próxima/volume ficam no plugin notebook_control (skills)
+        commands = (
+            ("buscar música ", "music"),
+            ("buscar musica ", "music"),
+            ("buscar vídeo ", "video"),
+            ("buscar video ", "video"),
+        )
         match = next(((prefix, kind) for prefix, kind in commands if normalized.startswith(prefix)), None)
         if match is None:
             return

@@ -1,49 +1,37 @@
 # ============================================================
 # JARVIS - Dependências
-# Fase 0-1: Núcleo (ativas)
 # ============================================================
+
+# --- Núcleo ---
 pydantic>=2.6
 pyyaml>=6.0
 python-dotenv>=1.0
 
-# ---- Dev / testes ----
-pytest>=8.0
-pytest-asyncio>=0.23
+# --- Voz ---
+sounddevice>=0.4.6          # microfone
+SpeechRecognition>=3.10     # reconhecimento Google (online)
+vosk>=0.3.45                # reconhecimento offline (rode scripts/baixar_modelo_vosk.py)
+pyttsx3>=2.90               # fala
 
-# ============================================================
-# Dependências opcionais das integrações. Algumas também exigem programas do sistema.
-# ============================================================
+# --- IA (use a que tiver chave) ---
+anthropic>=0.70             # Claude
+openai>=1.0                 # GPT
+google-generativeai         # Gemini
 
-# --- Fase 2: Memória ---
-chromadb
-sentence-transformers
-
-# --- Fase 3: IA multi-modelo ---
-# anthropic
-# openai
-google-generativeai
-# ollama
-
-# --- Fase 4: Voz ---
-pyttsx3>=2.90
-vosk>=0.3.45
-sounddevice>=0.4.6
-# piper-tts
-# SpeechRecognition
-
-# --- Fase 5: Interface ---
-# PySide6
-
-# --- Fase 6: Sistema / Automação ---
+# --- Controle do Windows ---
 psutil
 pyautogui
-keyboard
-mouse
 pywin32
 
-# --- Fase 8: Browser, OCR e integrações locais ---
-playwright
+# --- Browser, OCR e integrações locais ---
+playwright                  # depois: python -m playwright install chromium
 Pillow>=10.0
-pytesseract>=0.3.10
-# python-telegram-bot
-# discord.py
+pytesseract>=0.3.10         # requer Tesseract OCR instalado no sistema
+
+# --- Memória vetorial (opcional; memory.vector_enabled: true) ---
+# chromadb
+# sentence-transformers
+
+# --- Dev / testes ---
+pytest>=8.0
+pytest-asyncio>=0.23

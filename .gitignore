@@ -6,6 +6,8 @@ venv/
 logs/*.log
 database/*.db
 database/vectors/
+models/
+data/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

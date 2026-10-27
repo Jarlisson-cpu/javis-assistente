@@ -1,45 +1,47 @@
-"""Plugin de exemplo — demonstra a interface mínima que um plugin precisa implementar.
+"""Plugin de exemplo — modelo para criar novos comandos do JARVIS.
 
-Use-o como modelo ao criar plugins reais (ex.: um agente de pesquisa, um
-módulo de organização de arquivos, um agente de segurança, etc.).
+Um plugin pode (a) assinar eventos no `event_bus` ou (b), o mais comum,
+registrar skills. Uma skill registrada funciona automaticamente por texto, por
+voz, na interface web e também como ferramenta para o agente de IA.
 """
 
 from __future__ import annotations
 
-from core.event_bus import Event, EventBus
+import random
+
+from core.event_bus import EventBus
 from core.logger import get_logger
 from core.plugin_loader import Plugin
+from skills import Skill, registry
+from users import context as user_context
 
 logger = get_logger("plugins.example_greeting")
 
+_THANKS_REPLIES = ("Por nada{name}!", "Disponha{name}.", "Sempre às ordens{name}.")
 
-def _reply(event_bus: EventBus, message: str) -> None:
-    event_bus.publish_sync(Event(name="system_message", payload={"text": message}, source="jarvis"))
+
+def _thanks(params: dict[str, str]) -> str:
+    name = user_context.display_name()
+    return random.choice(_THANKS_REPLIES).format(name=f", {name}" if name else "")
 
 
 class ExampleGreetingPlugin(Plugin):
     name = "example_greeting"
-    version = "0.1.0"
-    description = "Responde com uma saudação e orientações simples para o Jarvis."
+    version = "1.0.0"
+    description = "Exemplo de plugin: responde a agradecimentos e mostra como registrar uma skill."
 
     def setup(self, event_bus: EventBus) -> None:
-        self._event_bus = event_bus
-        event_bus.subscribe("user_message", self._on_user_message)
+        registry.register(
+            Skill(
+                name="conversa.agradecimento",
+                description="Responde quando o usuário agradece.",
+                # padrões casam com o texto normalizado: minúsculo, sem acentos e sem pontuação
+                patterns=[r"(?:muito\s+)?(?:obrigado|obrigada|valeu|vlw|brigado|agradeco)(?:\s+jarvis)?(?:\s+.*)?"],
+                handler=_thanks,
+                examples=["obrigado"],
+                category="conversa",
+            )
+        )
 
-    def _on_user_message(self, event: Event) -> None:
-        text = (event.payload.get("text", "") or "").strip()
-        if not text:
-            return
-
-        normalized = text.lower()
-        logger.info("Plugin de exemplo recebeu mensagem: %s", text)
-
-        if any(word in normalized for word in ("olá", "oi", "ola", "bom dia", "boa tarde", "boa noite")):
-            _reply(self._event_bus, "Olá! Eu sou o Jarvis. Diga 'buscar ...', 'abrir ...', 'criar arquivo ...' ou 'apagar arquivo ...'.")
-        elif "ajuda" in normalized or "o que você faz" in normalized:
-            _reply(self._event_bus, "Posso abrir apps, buscar na web, criar/ler/apagar arquivos e gerenciar permissões. Tente um comando como 'buscar python' ou 'abrir chrome'.")
-        elif "tudo bem" in normalized or "como você" in normalized:
-            _reply(self._event_bus, "Estou bem, obrigado! Pronto para ajudar você com tarefas no seu computador.")
-        else:
-            # no reply for unrecognized texts; other plugins may handle them
-            return
+    def teardown(self) -> None:
+        registry.unregister("conversa.agradecimento")

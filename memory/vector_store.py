@@ -7,12 +7,10 @@ from core.logger import get_logger
 
 try:
     import chromadb
-    from chromadb.config import Settings
     from chromadb.utils import embedding_functions
     CHROMADB_AVAILABLE = True
 except ImportError:  # pragma: no cover
     chromadb = None  # type: ignore[assignment]
-    Settings = None  # type: ignore[assignment]
     embedding_functions = None  # type: ignore[assignment]
     CHROMADB_AVAILABLE = False
 
@@ -36,11 +34,8 @@ class ChromaStore:
         self.persist_directory = Path(persist_directory)
         self.persist_directory.mkdir(parents=True, exist_ok=True)
 
-        settings = Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=str(self.persist_directory),
-        )
-        self.client = chromadb.Client(settings)
+        # PersistentClient substituiu Settings(chroma_db_impl=...) a partir do ChromaDB 0.4
+        self.client = chromadb.PersistentClient(path=str(self.persist_directory))
         self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
             model_name=embedding_model
         )
@@ -58,14 +53,13 @@ class ChromaStore:
             documents=[text],
             metadatas=[metadata],
         )
-        self.client.persist()
         logger.debug("Mensagem indexada em ChromaDB: %s", id)
 
     def query(self, query_text: str, limit: int = 5) -> list[dict[str, Any]]:
         results = self.collection.query(
             query_texts=[query_text],
             n_results=limit,
-            include=["ids", "documents", "metadatas", "distances"],
+            include=["documents", "metadatas", "distances"],
         )
 
         rows: list[dict[str, Any]] = []
@@ -87,6 +81,7 @@ class ChromaStore:
         return rows
 
     def clear(self) -> None:
-        self.collection.delete(where={})
-        self.client.persist()
+        ids = self.collection.get(include=[]).get("ids", [])
+        if ids:
+            self.collection.delete(ids=ids)
         logger.info("Memória vetorial ChromaDB limpa")

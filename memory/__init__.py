@@ -41,8 +41,8 @@ class MemoryManager:
                     "Instale `chromadb` e `sentence-transformers` para habilitar."
                 )
 
-    def add_message(self, source: str, text: str) -> MessageRecord:
-        record = self.short_term.add_message(source, text)
+    def add_message(self, source: str, text: str, username: str | None = None) -> MessageRecord:
+        record = self.short_term.add_message(source, text, username=username)
         if self.vector_memory is not None and text:
             try:
                 self.vector_memory.add_document(
@@ -57,8 +57,8 @@ class MemoryManager:
                 logger.exception("Falha ao indexar mensagem em ChromaDB")
         return record
 
-    def list_messages(self, limit: int = 100) -> Iterable[MessageRecord]:
-        return self.short_term.list_messages(limit=limit)
+    def list_messages(self, limit: int = 100, username: str | None = None) -> Iterable[MessageRecord]:
+        return self.short_term.list_messages(limit=limit, username=username)
 
     def clear_messages(self) -> None:
         self.short_term.clear_messages()

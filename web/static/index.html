@@ -3,49 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jarvis Web Interface</title>
+  <title>JARVIS</title>
   <link rel="stylesheet" href="/static/app.css" />
 </head>
 <body>
   <div class="app-shell">
     <header class="app-header">
       <div>
-        <h1>Jarvis</h1>
-        <p>Interface web completa para usar o assistente Jarvis no navegador.</p>
+        <h1>JARVIS</h1>
+        <p>Seu assistente pessoal — fale ou digite o que precisa.</p>
       </div>
-      <div class="status-pill" id="status-pill">Carregando...</div>
+      <div class="header-actions">
+        <span class="user-chip" id="user-chip" hidden></span>
+        <button id="logout" class="ghost" hidden>Sair</button>
+        <div class="status-pill" id="status-pill">Carregando...</div>
+      </div>
     </header>
 
     <main class="app-grid">
       <section class="panel panel-wide">
         <div class="panel-header">
           <h2>Conversa</h2>
-          <button id="refresh-history">Atualizar histórico</button>
-          <button id="clear-history" class="danger">Limpar histórico</button>
+          <div class="panel-buttons">
+            <button id="refresh-history" class="ghost">Atualizar</button>
+            <button id="clear-history" class="danger">Limpar histórico</button>
+          </div>
         </div>
-        <div class="chat-window" id="chat-window"></div>
+        <div class="chat-window" id="chat-window" aria-live="polite"></div>
         <div class="compose-box">
-          <textarea id="message-input" placeholder="Digite um comando ou pergunta para o Jarvis..." rows="2"></textarea>
-          <button id="send-message">Enviar</button>
+          <button id="voice-toggle" class="mic" title="Falar com o JARVIS" aria-label="Ativar microfone">🎤</button>
+          <textarea id="message-input" placeholder="Ex.: aumenta o volume, tira um print, me lembra em 10 minutos de beber água..." rows="2"></textarea>
+          <button id="send-message" class="primary">Enviar</button>
         </div>
-      </section>
-
-      <section class="panel panel-sidebar">
-        <div class="panel-header">
-          <h2>Permissões</h2>
-        </div>
-        <div class="permissions" id="permissions-list"></div>
-        <button id="save-permissions" class="primary">Salvar permissões</button>
-      </section>
-
-      <section class="panel panel-sidebar">
-        <div class="panel-header">
-          <h2>Voz</h2>
-        </div>
-        <div class="voice-card">
-          <button id="voice-toggle" class="primary">Ativar microfone</button>
-          <button id="speech-toggle" class="primary">Responder por voz</button>
-          <p class="voice-status" id="voice-status">Microfone desligado. Resposta por voz desligada.</p>
+        <div class="voice-options">
+          <label><input type="checkbox" id="speech-toggle" checked /> Responder em voz alta</label>
+          <label><input type="checkbox" id="wake-toggle" /> Só atender quando eu disser “Jarvis”</label>
+          <span class="voice-status" id="voice-status">Microfone desligado.</span>
         </div>
       </section>
 
@@ -54,29 +47,34 @@
           <h2>Atalhos rápidos</h2>
         </div>
         <div class="quick-actions">
-          <button class="action-btn" data-command="buscar python">Buscar "python"</button>
-          <button class="action-btn" data-command="abrir bloco de notas">Abrir Bloco de Notas</button>
-          <button class="action-btn" data-command="abrir site google.com">Abrir Google</button>
-          <button class="action-btn" data-command="criar arquivo nota.txt : Olá do Jarvis">Criar arquivo de texto</button>
-          <button class="action-btn" data-command="ler arquivo nota.txt">Ler arquivo de texto</button>
-          <button class="action-btn" data-command="apagar arquivo nota.txt">Apagar arquivo de texto</button>
+          <button class="action-btn" data-command="status do sistema">Status do sistema</button>
+          <button class="action-btn" data-command="como está a bateria">Bateria</button>
+          <button class="action-btn" data-command="tirar um print">Tirar print</button>
+          <button class="action-btn" data-command="aumentar o volume">Volume +</button>
+          <button class="action-btn" data-command="diminuir o volume">Volume −</button>
+          <button class="action-btn" data-command="pausar a música">Tocar/pausar</button>
+          <button class="action-btn" data-command="minimizar tudo">Mostrar área de trabalho</button>
+          <button class="action-btn" data-command="bloquear a tela">Bloquear tela</button>
+          <button class="action-btn" data-command="ler minhas notas">Minhas notas</button>
+          <button class="action-btn" data-command="abrir youtube">Abrir YouTube</button>
         </div>
       </section>
 
       <section class="panel panel-sidebar">
         <div class="panel-header">
-          <h2>Comandos suportados</h2>
+          <h2>O que sei fazer</h2>
         </div>
-        <ul class="command-list">
-          <li><strong>buscar &lt;termo&gt;</strong> — pesquisa na web</li>
-          <li><strong>abrir &lt;app&gt;</strong> — abre aplicativos ou sites</li>
-          <li><strong>abrir site &lt;domínio&gt;</strong> — abre qualquer site como google.com</li>
-          <li><strong>perguntar &lt;sua dúvida&gt;</strong> — resposta em estilo assistente de IA</li>
-          <li><strong>criar arquivo &lt;caminho&gt; : &lt;text&gt;</strong> — salva arquivo</li>
-          <li><strong>ler arquivo &lt;caminho&gt;</strong> — mostra conteúdo</li>
-          <li><strong>apagar arquivo &lt;caminho&gt;</strong> — remove arquivo</li>
-          <li><strong>olá</strong>, <strong>ajuda</strong>, <strong>como você</strong> — respostas do Jarvis</li>
-        </ul>
+        <input type="search" id="skill-filter" placeholder="Filtrar comandos..." />
+        <div class="command-list" id="skill-list"></div>
+      </section>
+
+      <section class="panel panel-sidebar">
+        <div class="panel-header">
+          <h2>Permissões</h2>
+        </div>
+        <p class="hint" id="permissions-hint"></p>
+        <div class="permissions" id="permissions-list"></div>
+        <button id="save-permissions" class="primary">Salvar permissões</button>
       </section>
 
       <section class="panel panel-sidebar">
@@ -84,20 +82,35 @@
           <h2>Informações</h2>
         </div>
         <div class="info-card">
-          <p><strong>Host:</strong> <span id="app-host">127.0.0.1</span></p>
-          <p><strong>Porta:</strong> <span id="app-port">8000</span></p>
-          <p><strong>Aplicação:</strong> <span id="app-name"></span></p>
-          <p><strong>Versão:</strong> <span id="app-version"></span></p>
+          <p><strong>Aplicação:</strong> <span id="app-name"></span> <span id="app-version"></span></p>
+          <p><strong>IA:</strong> <span id="ai-provider"></span></p>
+          <p><strong>Endereço:</strong> <span id="app-host"></span></p>
           <p><strong>Plugins carregados:</strong></p>
           <ul id="plugin-list"></ul>
         </div>
       </section>
     </main>
-
-    <footer class="app-footer">
-      <p>Use esta interface para controlar Jarvis e explorar os recursos que já estão disponíveis.</p>
-    </footer>
   </div>
+
+  <dialog id="login-dialog">
+    <form id="login-form" method="dialog">
+      <h2>Entrar no JARVIS</h2>
+      <label>Usuário <input id="login-username" autocomplete="username" required /></label>
+      <label>Senha <input id="login-password" type="password" autocomplete="current-password" required /></label>
+      <p class="error" id="login-error"></p>
+      <button class="primary" type="submit">Entrar</button>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog">
+    <h2>Confirmar ação</h2>
+    <p id="confirm-text"></p>
+    <div class="dialog-buttons">
+      <button id="confirm-no" class="ghost">Cancelar</button>
+      <button id="confirm-yes" class="danger">Confirmar</button>
+    </div>
+  </dialog>
+
   <script src="/static/app.js"></script>
 </body>
 </html>

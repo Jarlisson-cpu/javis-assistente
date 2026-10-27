@@ -30,7 +30,11 @@ class Event:
 
 
 class EventBus:
-    """Barramento pub/sub simples, suportando handlers síncronos e assíncronos."""
+    """Barramento pub/sub simples, suportando handlers síncronos e assíncronos.
+
+    A falha de um handler é registrada no log e não impede os demais de
+    receberem o evento — um plugin com defeito não derruba o assistente.
+    """
 
     def __init__(self) -> None:
         self._handlers: dict[str, list[Handler]] = defaultdict(list)
@@ -47,18 +51,19 @@ class EventBus:
 
     async def publish(self, event: Event) -> None:
         """Publica um evento, chamando todos os handlers registrados para ele."""
-        handlers = self._handlers.get(event.name, [])
+        handlers = list(self._handlers.get(event.name, []))
         if not handlers:
             logger.debug("Evento '%s' publicado sem handlers registrados", event.name)
             return
 
-        print(f"[event_bus] Publicando evento '{event.name}' para {len(handlers)} handler(s)")
+        logger.debug("Publicando evento '%s' para %d handler(s)", event.name, len(handlers))
         for handler in handlers:
-            print(f"[event_bus] Chamando handler {handler} para evento '{event.name}'")
-            result = handler(event)
-            print(f"[event_bus] Handler {handler} retornou {result!r}")
-            if inspect.isawaitable(result):
-                await result
+            try:
+                result = handler(event)
+                if inspect.isawaitable(result):
+                    await result
+            except Exception:
+                logger.exception("Handler %s falhou ao processar '%s'", handler, event.name)
 
     def publish_sync(self, event: Event) -> None:
         """Versão síncrona de `publish`, para chamadas fora de um loop assíncrono."""
@@ -68,12 +73,8 @@ class EventBus:
             asyncio.run(self.publish(event))
             return
 
-        if loop.is_running():
-            logger.debug(
-                "publish_sync called from within a running loop for event '%s'; scheduling async publish",
-                event.name,
-            )
-            asyncio.create_task(self.publish(event))
-            return
-
-        loop.run_until_complete(self.publish(event))
+        logger.debug(
+            "publish_sync chamado dentro de um loop ativo para '%s'; agendando publicação",
+            event.name,
+        )
+        loop.create_task(self.publish(event))
