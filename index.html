@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JARVIS — Assistente por Voz</title>
+  <meta name="description" content="JARVIS: assistente pessoal por voz que controla o seu notebook Windows. Experimente no navegador e baixe a versão completa." />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050b16;
+      --panel: rgba(13, 24, 44, 0.82);
+      --panel-solid: #0d182c;
+      --line: rgba(125, 211, 252, 0.16);
+      --text: #e6edf7;
+      --muted: #8fa3bf;
+      --accent: #38bdf8;
+      --accent-2: #22d3ee;
+      --glow: rgba(56, 189, 248, 0.45);
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --radius: 18px;
+      font-family: "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(34, 211, 238, 0.12), transparent 60%),
+        radial-gradient(900px 500px at -10% 30%, rgba(56, 189, 248, 0.10), transparent 60%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+
+    /* ---------------------------------------------------------- topo */
+    nav {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 18px 0;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.14em; }
+    .brand-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px var(--glow); }
+    nav .links { display: flex; gap: 18px; flex-wrap: wrap; }
+    nav .links a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+    nav .links a:hover { color: var(--text); }
+
+    .hero {
+      display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: center;
+      padding: 40px 0 56px;
+    }
+    .eyebrow { color: var(--accent-2); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.8rem; }
+    h1 { font-size: clamp(2.4rem, 6vw, 4rem); line-height: 1.05; margin: 10px 0 16px; letter-spacing: -0.02em; }
+    h1 span { color: var(--accent); }
+    .lead { color: var(--muted); font-size: 1.12rem; max-width: 34em; }
+    .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+      padding: 12px 20px; border-radius: 999px; border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04); color: var(--text); text-decoration: none;
+      font: inherit; font-weight: 600; cursor: pointer; transition: transform .15s, background .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-1px); background: rgba(255, 255, 255, 0.08); }
+    .btn.primary { background: var(--accent); color: #04121f; border-color: transparent; box-shadow: 0 8px 30px var(--glow); }
+    .btn.primary:hover { background: #7dd3fc; }
+
+    /* reator */
+    .reactor { position: relative; width: min(340px, 80vw); aspect-ratio: 1; margin: 0 auto; }
+    .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--line); }
+    .ring.r1 { inset: 0; border-color: rgba(56, 189, 248, 0.25); border-top-color: var(--accent); animation: spin 9s linear infinite; }
+    .ring.r2 { inset: 12%; border-style: dashed; border-color: rgba(34, 211, 238, 0.35); animation: spin 14s linear infinite reverse; }
+    .ring.r3 { inset: 26%; border-width: 6px; border-color: rgba(56, 189, 248, 0.18); border-left-color: var(--accent-2); animation: spin 5s linear infinite; }
+    .core {
+      position: absolute; inset: 38%; border-radius: 50%;
+      background: radial-gradient(circle, #e0f7ff 0%, var(--accent) 45%, rgba(56, 189, 248, 0.1) 72%);
+      box-shadow: 0 0 60px var(--glow), 0 0 120px rgba(34, 211, 238, 0.25);
+      animation: breathe 3.2s ease-in-out infinite;
+    }
+    .reactor.listening .core { animation-duration: .8s; }
+    .reactor.speaking .ring.r1 { animation-duration: 2s; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes breathe { 50% { transform: scale(1.08); filter: brightness(1.15); } }
+
+    /* ---------------------------------------------------------- seções */
+    section { padding: 56px 0; }
+    h2 { font-size: clamp(1.6rem, 3.5vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; }
+    .sub { color: var(--muted); margin: 0 0 28px; max-width: 46em; }
+
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); backdrop-filter: blur(8px); }
+
+    /* demo */
+    .demo { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; }
+    .console { display: flex; flex-direction: column; min-height: 460px; }
+    .console-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 14px 18px; border-bottom: 1px solid var(--line);
+    }
+    .status { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.9rem; }
+    .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+    .status.listening i { background: #fb7185; box-shadow: 0 0 10px #fb7185; animation: breathe .8s infinite; }
+    .chat { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; max-height: 420px; }
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .msg.you { align-self: flex-end; background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .msg.jarvis { align-self: flex-start; background: rgba(74, 222, 128, 0.08); border: 1px solid rgba(74, 222, 128, 0.2); }
+    .msg.jarvis.local { border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.07); }
+    .msg small { display: block; color: var(--muted); font-size: 0.75rem; margin-bottom: 2px; }
+    .compose { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; padding: 14px; border-top: 1px solid var(--line); }
+    .compose input {
+      width: 100%; min-width: 0; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04); color: var(--text); font: inherit;
+    }
+    .compose input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .mic { width: 48px; height: 48px; padding: 0; border-radius: 50%; font-size: 1.25rem; }
+    .mic.on { background: #fb7185; color: #1a0508; border-color: transparent; animation: breathe .8s infinite; }
+    .options { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 18px 14px; color: var(--muted); font-size: 0.88rem; }
+
+    .side { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .side h3 { margin: 0 0 4px; font-size: 1rem; }
+    .chip {
+      text-align: left; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03); color: var(--text); font: inherit; font-size: 0.92rem; cursor: pointer;
+    }
+    .chip:hover { border-color: var(--accent); }
+    .chip.pc::after { content: " · no PC"; color: var(--warn); font-size: 0.75rem; }
+    .note { color: var(--muted); font-size: 0.82rem; margin: 4px 0 0; }
+
+    /* recursos */
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .card { padding: 20px; }
+    .card .icon { font-size: 1.6rem; }
+    .card h3 { margin: 8px 0 6px; font-size: 1.08rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    .card code { color: #bae6fd; font-size: 0.88rem; }
+
+    /* instalação */
+    .steps { counter-reset: step; display: grid; gap: 14px; }
+    .step { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; padding: 18px; }
+    .step > div, .demo > *, .hero > * { min-width: 0; }
+    .step::before {
+      counter-increment: step; content: counter(step);
+      width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+      background: rgba(56, 189, 248, 0.15); color: var(--accent); font-weight: 700;
+    }
+    .step h3 { margin: 0 0 6px; font-size: 1.05rem; }
+    .step p { margin: 0 0 8px; color: var(--muted); }
+    .code { position: relative; display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    .code pre {
+      flex: 1; min-width: 0; margin: 0; padding: 12px 14px; border-radius: 12px; overflow-x: auto;
+      background: #020812; border: 1px solid var(--line); color: #bae6fd; font-size: 0.9rem;
+    }
+    .copy { padding: 8px 12px; border-radius: 10px; font-size: 0.82rem; }
+
+    footer { padding: 36px 0 48px; color: var(--muted); border-top: 1px solid var(--line); font-size: 0.9rem; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: minmax(0, 1fr); padding-top: 16px; }
+      .reactor { width: min(240px, 60vw); order: -1; }
+      .demo { grid-template-columns: minmax(0, 1fr); }
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      nav .links { display: none; }
+      .grid { grid-template-columns: minmax(0, 1fr); }
+      .compose { grid-template-columns: auto 1fr; }
+      .compose .send { grid-column: 1 / -1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <div class="brand"><span class="brand-dot"></span>JARVIS</div>
+      <div class="links">
+        <a href="#demo">Experimentar</a>
+        <a href="#recursos">Recursos</a>
+        <a href="#instalar">Instalar</a>
+        <a href="https://github.com/Jarlisson-cpu/javis-assistente">GitHub</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Assistente pessoal por voz · Windows</div>
+        <h1>Fale. O <span>JARVIS</span> faz.</h1>
+        <p class="lead">
+          “Jarvis, coloca o volume em 30, tira um print e me lembra da reunião em 15 minutos.”
+          Controle o seu notebook com a voz — volume, brilho, músicas, janelas, apps, lembretes,
+          notas e energia — com usuários protegidos por senha e confirmação para tudo que é perigoso.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href="#demo">🎤 Experimentar agora</a>
+          <a class="btn" href="https://github.com/Jarlisson-cpu/javis-assistente/archive/refs/heads/main.zip">⬇ Baixar para Windows</a>
+          <a class="btn" href="https://github.com/Jarlisson-cpu/javis-assistente">Ver código</a>
+        </div>
+      </div>
+      <div class="reactor" id="reactor" aria-hidden="true">
+        <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="core"></div>
+      </div>
+    </header>
+  </div>
+
+  <section id="demo">
+    <div class="wrap">
+      <h2>Converse com o JARVIS aqui mesmo</h2>
+      <p class="sub">
+        Esta é a versão de demonstração no navegador: ela ouve, fala, abre sites, pesquisa, toca música,
+        faz contas, anota e cria lembretes. Comandos que mexem no computador (volume, desligar, prints…)
+        funcionam na <a href="#instalar">versão instalada</a> — aqui o JARVIS explica o que faria.
+      </p>
+      <div class="demo">
+        <div class="panel console">
+          <div class="console-head">
+            <strong>JARVIS</strong>
+            <span class="status" id="status"><i></i><span id="status-text">Online</span></span>
+          </div>
+          <div class="chat" id="chat" aria-live="polite"></div>
+          <div class="options">
+            <label><input type="checkbox" id="speak" checked /> Responder em voz alta</label>
+            <span id="mic-hint"></span>
+          </div>
+          <form class="compose" id="form">
+            <button type="button" class="btn mic" id="mic" title="Falar" aria-label="Falar com o JARVIS">🎤</button>
+            <input id="input" autocomplete="off" placeholder="Digite ou clique no microfone e fale…" aria-label="Mensagem para o JARVIS" />
+            <button class="btn primary send" type="submit">Enviar</button>
+          </form>
+        </div>
+        <aside class="panel side">
+          <h3>Experimente dizer</h3>
+          <button class="chip">que horas são</button>
+          <button class="chip">quanto é 15 vezes 3</button>
+          <button class="chip">abrir youtube</button>
+          <button class="chip">toca Legião Urbana</button>
+          <button class="chip">pesquisa receita de bolo de cenoura</button>
+          <button class="chip">me lembra em 1 minuto de beber água</button>
+          <button class="chip">anota comprar pão</button>
+          <button class="chip">ler minhas notas</button>
+          <button class="chip pc">aumenta o volume</button>
+          <button class="chip pc">desliga o computador em 30 minutos</button>
+          <p class="note">O microfone funciona no Chrome e no Edge. Nada do que você fala fica salvo neste site.</p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="recursos">
+    <div class="wrap">
+      <h2>O que a versão instalada faz no seu notebook</h2>
+      <p class="sub">Mais de 40 comandos prontos — e, com uma chave de IA (Claude ou OpenAI), qualquer pedido em linguagem natural vira ação.</p>
+      <div class="grid">
+        <div class="panel card"><div class="icon">🔊</div><h3>Som e música</h3><p><code>volume em 50</code>, <code>muta o som</code>, <code>próxima música</code>, <code>toca Coldplay</code></p></div>
+        <div class="panel card"><div class="icon">🖥️</div><h3>Tela e janelas</h3><p><code>tira um print</code>, <code>modo escuro</code>, <code>minimiza tudo</code>, <code>nova aba</code>, <code>digita…</code></p></div>
+        <div class="panel card"><div class="icon">⚡</div><h3>Energia</h3><p><code>bloqueia a tela</code>, <code>desliga em 30 minutos</code>, <code>reinicia</code> — sempre com confirmação</p></div>
+        <div class="panel card"><div class="icon">🚀</div><h3>Apps e sites</h3><p><code>abre o Spotify</code>, <code>fecha o Chrome</code>, <code>configurações de bluetooth</code></p></div>
+        <div class="panel card"><div class="icon">📊</div><h3>Status do PC</h3><p><code>como está a bateria</code>, <code>o que está pesando</code>, <code>estou conectado</code></p></div>
+        <div class="panel card"><div class="icon">🗒️</div><h3>Produtividade</h3><p>Lembretes, timers, notas, calculadora falada e pastas novas</p></div>
+        <div class="panel card"><div class="icon">👤</div><h3>Usuários</h3><p>Contas com senha, administrador, respostas com o seu nome e histórico separado</p></div>
+        <div class="panel card"><div class="icon">🛡️</div><h3>Seguro</h3><p>Permissões por ação; desligar, apagar e terminal pedem “sim” antes</p></div>
+        <div class="panel card"><div class="icon">🎙️</div><h3>Voz de verdade</h3><p>“Jarvis…” para ativar, modo conversa, reconhecimento offline (Vosk) ou Google</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="instalar">
+    <div class="wrap">
+      <h2>Instale no seu Windows</h2>
+      <p class="sub">Requer Windows 10/11 e <a href="https://www.python.org/downloads/">Python 3.13</a> ou mais novo.</p>
+      <div class="steps">
+        <div class="panel step"><div>
+          <h3>Baixe o projeto</h3>
+          <p>Pelo <a href="https://github.com/Jarlisson-cpu/javis-assistente/archive/refs/heads/main.zip">arquivo ZIP</a> ou com o Git:</p>
+          <div class="code"><pre>git clone https://github.com/Jarlisson-cpu/javis-assistente.git</pre><button class="btn copy">Copiar</button></div>
+        </div></div>
+        <div class="panel step"><div>
+          <h3>Instale as dependências</h3>
+          <p>Dentro da pasta do projeto:</p>
+          <div class="code"><pre>pip install -r requirements.txt</pre><button class="btn copy">Copiar</button></div>
+        </div></div>
+        <div class="panel step"><div>
+          <h3>Crie o seu usuário</h3>
+          <p>O primeiro usuário vira administrador.</p>
+          <div class="code"><pre>python main.py --criar-usuario seu_nome</pre><button class="btn copy">Copiar</button></div>
+        </div></div>
+        <div class="panel step"><div>
+          <h3>Fale com ele</h3>
+          <p>Diga “Jarvis” e o pedido. Também dá para usar <code>--web</code> (painel no navegador) ou <code>--gui</code>.</p>
+          <div class="code"><pre>python main.py --voice</pre><button class="btn copy">Copiar</button></div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>JARVIS · código aberto (licença MIT)</span>
+      <a href="https://github.com/Jarlisson-cpu/javis-assistente">github.com/Jarlisson-cpu/javis-assistente</a>
+    </div>
+  </footer>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("input");
+    const micButton = document.getElementById("mic");
+    const speakToggle = document.getElementById("speak");
+    const reactor = document.getElementById("reactor");
+    const status = document.getElementById("status");
+    const statusText = document.getElementById("status-text");
+
+    // ------------------------------------------------------------ texto
+    const NUMBER_WORDS = {
+      zero: 0, um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9,
+      dez: 10, onze: 11, doze: 12, treze: 13, quatorze: 14, catorze: 14, quinze: 15, dezesseis: 16, dezessete: 17,
+      dezoito: 18, dezenove: 19, vinte: 20, trinta: 30, quarenta: 40, cinquenta: 50, sessenta: 60, setenta: 70,
+      oitenta: 80, noventa: 90, cem: 100, cento: 100, duzentos: 200, trezentos: 300, mil: 1000, meia: 30,
+    };
+    const POLITE = ["ei jarvis", "ok jarvis", "jarvis", "por favor", "voce pode", "voce poderia", "pode", "poderia", "consegue"];
+
+    function normalize(text, dropPolite = true) {
+      let value = text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      value = value.replace(/["“”'`´!?¿¡;]+/g, " ").replace(/(?<!\d),|,(?!\d)/g, " ").replace(/\s+/g, " ").trim();
+      value = value.replace(/[.:\-\s]+$/, "");
+      if (!dropPolite) return value;
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const prefix of POLITE) {
+          if (value.startsWith(prefix + " ")) { value = value.slice(prefix.length + 1).trim(); changed = true; }
+        }
+      }
+      return value.replace(/\s+por favor$/, "");
+    }
+
+    // devolve o trecho original (com acentos e maiúsculas) que corresponde ao texto normalizado
+    function recoverRaw(raw, value) {
+      const starts = [...raw.matchAll(/\S+/g)].map((match) => match.index);
+      for (const start of starts) {
+        const candidate = raw.slice(start).trim();
+        if (normalize(candidate, false) === value) return candidate.replace(/[.!?]+$/, "");
+      }
+      return value;
+    }
+
+    function wordsToNumber(text) {
+      const value = text.trim();
+      if (/^\d+([.,]\d+)?$/.test(value)) return parseFloat(value.replace(",", "."));
+      let total = 0, found = false;
+      for (const word of value.split(/\s+/)) {
+        if (word === "e") continue;
+        if (!(word in NUMBER_WORDS)) return null;
+        total += NUMBER_WORDS[word]; found = true;
+      }
+      return found ? total : null;
+    }
+
+    // ------------------------------------------------------------ calculadora
+    function calculate(expression) {
+      let text = expression.toLowerCase().replace(/[?.]$/, "");
+      const percent = text.match(/^(.+?)\s*(?:%|por\s*cento)\s+de\s+(.+)$/);
+      if (percent) {
+        const p = wordsToNumber(percent[1]), v = wordsToNumber(percent[2]);
+        if (p !== null && v !== null) return format(p * v / 100);
+      }
+      const ops = [
+        [/\bdividido por\b/g, "/"], [/\belevado (?:a|ao)\b/g, "**"], [/\bao quadrado\b/g, "**2"],
+        [/\bvezes\b|\bmultiplicado por\b|\bx\b/g, "*"], [/\bmais\b/g, "+"], [/\bmenos\b/g, "-"],
+      ];
+      for (const [pattern, symbol] of ops) text = text.replace(pattern, ` ${symbol} `);
+      text = text.replace(/(\d),(\d)/g, "$1.$2");
+      text = text.replace(/[a-z]+(?:\s+(?:e\s+)?[a-z]+)*/g, (words) => {
+        const n = wordsToNumber(words);
+        return n === null ? words : ` ${n} `;
+      });
+      text = text.replace(/\s+/g, " ").trim();
+      if (!/^[\d\s.+\-*/()]+$/.test(text) || !text) throw new Error("Não entendi a conta. Tente “quanto é 12 vezes 8”.");
+      const result = Function(`"use strict"; return (${text});`)();
+      if (!Number.isFinite(result)) throw new Error("Essa conta não tem resultado (divisão por zero?).");
+      return format(result);
+    }
+
+    function format(n) {
+      return Number.isInteger(n) ? n.toLocaleString("pt-BR") : n.toLocaleString("pt-BR", { maximumFractionDigits: 4 });
+    }
+
+    // ------------------------------------------------------------ notas e lembretes (só neste navegador)
+    function loadNotes() {
+      try { return JSON.parse(localStorage.getItem("jarvis-demo-notes") || "[]"); } catch { return []; }
+    }
+    function saveNotes(notes) {
+      try { localStorage.setItem("jarvis-demo-notes", JSON.stringify(notes)); } catch { /* modo privado */ }
+    }
+
+    const UNIT = { segundo: 1, minuto: 60, hora: 3600 };
+    const SITES = {
+      youtube: "https://www.youtube.com", google: "https://www.google.com", gmail: "https://mail.google.com",
+      "whatsapp": "https://web.whatsapp.com", instagram: "https://www.instagram.com", facebook: "https://www.facebook.com",
+      github: "https://github.com", netflix: "https://www.netflix.com", spotify: "https://open.spotify.com",
+      "google drive": "https://drive.google.com", drive: "https://drive.google.com", maps: "https://maps.google.com",
+      tradutor: "https://translate.google.com", wikipedia: "https://pt.wikipedia.org", chatgpt: "https://chatgpt.com",
+      claude: "https://claude.ai", linkedin: "https://www.linkedin.com", twitter: "https://x.com", twitch: "https://www.twitch.tv",
+    };
+    const WEEKDAYS = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
+
+    function openUrl(url) {
+      const opened = window.open(url, "_blank", "noopener");
+      return opened === null ? " (o navegador bloqueou a nova aba — clique para permitir pop-ups)" : "";
+    }
+
+    // comandos que precisam do JARVIS instalado no Windows
+    const PC_ONLY = [
+      [/volume|som\b|mut[ao]r?|mudo/, "ajustaria o volume do Windows"],
+      [/brilho|tela mais (clara|escura)|modo (escuro|claro)/, "ajustaria a tela"],
+      [/(desliga|reinicia|suspende|hiberna|bloqueia|trava)/, "cuidaria da energia do computador — sempre pedindo sua confirmação antes"],
+      [/print|captura de tela|screenshot/, "tiraria um print e salvaria em Imagens/Jarvis"],
+      [/bateria|cpu|memoria|processos|disco|espaco livre|meu ip|conectado|status do (sistema|computador)/, "leria o status real do seu notebook"],
+      [/^(copia|cola|recorta|desfaz|salva|minimiza|maximiza|troca de janela|nova aba|fecha (a |essa )?(aba|janela)|aperta|digit[ae]|escrev[ae])/, "controlaria janelas e teclado"],
+      [/^(fecha|encerra|mata) /, "fecharia esse programa"],
+      [/^(abr[ea]|abrir|inicia) .*(configurac|bloco|calculadora|word|excel|vs ?code|pasta|explorador|terminal|prompt)/, "abriria esse programa no Windows"],
+      [/executa .*comando|cria .*pasta/, "faria isso no seu computador"],
+    ];
+
+    // ------------------------------------------------------------ cérebro
+    function respond(raw) {
+      const text = normalize(raw);
+      let m;
+
+      if (!text) return "Pode falar.";
+      if (/^(ola|oi|opa|e ai|hey|fala|bom dia|boa tarde|boa noite)( jarvis)?( tudo bem)?$|^jarvis$/.test(text)) {
+        const h = new Date().getHours();
+        return `${h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite"}! Em que posso ajudar?`;
+      }
+      if (/(obrigad|valeu)/.test(text)) return "Disponha!";
+      if (/(quem e voce|seu nome|como voce se chama|o que e o jarvis)/.test(text))
+        return "Eu sou o JARVIS, seu assistente pessoal. Instalado no seu Windows, controlo o notebook por voz; aqui no site, mostro um pouco do que sei fazer.";
+      if (/^(ajuda|comandos)$|o que (voce )?(sabe|pode|consegue) fazer/.test(text))
+        return "Aqui no site: hora e data, contas, abrir sites, pesquisar, tocar música, notas e lembretes. Instalado no seu PC, também controlo volume, brilho, janelas, apps, energia e muito mais.";
+      if (/(que horas|horas sao|hora e agora|hora certa)/.test(text))
+        return `Agora são ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.`;
+      if (/(que dia|qual (e )?a data|data de hoje)/.test(text)) {
+        const d = new Date();
+        return `Hoje é ${WEEKDAYS[d.getDay()]}, ${d.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}.`;
+      }
+      if ((m = text.match(/^(?:quanto (?:e|da)|calcula|calcular|calcule) (.+)$/))) {
+        try { return `Dá ${calculate(m[1])}.`; } catch (err) { return err.message; }
+      }
+      if ((m = text.match(/^(?:me )?(?:lembra|lembre|avisa|avise)(?:-me| me)? (?:em|daqui a|daqui|dentro de) (.+?) (segundos?|minutos?|horas?)(?: (?:de|para|que|pra) (.+))?$/))
+          || (m = text.match(/^(?:cria |coloca |liga )?(?:um )?(?:timer|temporizador|alarme|cronometro) (?:de|para|pra|em) (.+?) (segundos?|minutos?|horas?)(?: (?:para|pra|de) (.+))?$/))) {
+        const amount = wordsToNumber(m[1]);
+        const unit = m[2].replace(/s$/, "");
+        if (!amount || amount <= 0) return "Diga quanto tempo, por exemplo: me lembra em 10 minutos de tirar o bolo.";
+        const message = m[3] ? recoverRaw(raw, m[3]) : "o tempo acabou";
+        setTimeout(() => remind(message), amount * UNIT[unit] * 1000);
+        if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+        return `Combinado. Te aviso em ${amount} ${unit}${amount > 1 ? "s" : ""}: ${message}. Deixe esta aba aberta.`;
+      }
+      if ((m = text.match(/^(?:anota|anotar|anote|toma nota|nota)(?: (?:que|ai|isso))?[: ]+(.+)$/))) {
+        const notes = loadNotes();
+        const original = recoverRaw(raw, m[1]);
+        notes.push(original);
+        saveNotes(notes);
+        return `Anotado: ${original}.`;
+      }
+      if (/^(?:le|ler|leia|mostra|mostrar|quais (?:sao )?)?\s*(?:as )?(?:minhas )?(?:notas|anotacoes)$/.test(text)) {
+        const notes = loadNotes();
+        return notes.length ? "Suas notas: " + notes.map((n, i) => `${i + 1}. ${n}`).join("; ") + "." : "Você ainda não tem notas.";
+      }
+      if (/^(?:apaga|apagar|limpa|limpar) (?:as |todas as )?(?:minhas )?(?:notas|anotacoes)$/.test(text)) {
+        if (!confirm("Apagar todas as suas notas desta demonstração?")) return "Tudo bem, cancelei.";
+        saveNotes([]);
+        return "Notas apagadas.";
+      }
+      if ((m = text.match(/^(?:toca|tocar|toque|reproduz|reproduzir|quero ouvir|ouvir|escutar|coloca pra tocar|bota pra tocar) (?:a musica |musica |a |o )?(.+)$/))) {
+        const query = recoverRaw(raw, m[1]);
+        const warn = openUrl("https://music.youtube.com/search?q=" + encodeURIComponent(query));
+        return `Abrindo ${query} no YouTube Music.${warn}`;
+      }
+      if ((m = text.match(/^(?:busca|buscar|busque|pesquisa|pesquisar|pesquise|procura|procurar|procure)(?: (?:no|na) (?:google|internet|web))?(?: (?:sobre|por))? (.+)$/))) {
+        const query = recoverRaw(raw, m[1]);
+        const warn = openUrl("https://www.google.com/search?q=" + encodeURIComponent(query));
+        return `Pesquisando: ${query}.${warn}`;
+      }
+
+      for (const [pattern, what] of PC_ONLY) {
+        if (pattern.test(text)) {
+          return { local: true, text: `No seu notebook, com o JARVIS instalado, eu ${what}. Aqui no site eu não tenho acesso ao seu computador — veja como instalar logo abaixo.` };
+        }
+      }
+
+      if ((m = text.match(/^(?:abr[ea]|abrir|abri|inicia|iniciar)(?: o site| a| o| os| as)? (.+)$/))) {
+        const target = m[1].trim();
+        const url = SITES[target] || (/\.[a-z]{2,}$/.test(target) && !/\s/.test(target) ? (target.startsWith("http") ? target : "https://" + target) : null);
+        if (url) return `Abrindo ${target}.${openUrl(url)}`;
+        return { local: true, text: `Para abrir “${target}” no seu computador, preciso estar instalado. Aqui eu abro sites — tente “abrir youtube”.` };
+      }
+
+      return "Ainda não sei fazer isso aqui no site. Diga “ajuda” para ver exemplos — e, instalado com uma chave de IA, entendo qualquer pedido.";
+    }
+
+    // ------------------------------------------------------------ interface
+    function addMessage(who, text, local = false) {
+      const div = document.createElement("div");
+      div.className = `msg ${who}${local ? " local" : ""}`;
+      const label = document.createElement("small");
+      label.textContent = who === "you" ? "Você" : local ? "JARVIS · precisa da versão instalada" : "JARVIS";
+      div.append(label, document.createTextNode(text));
+      chat.append(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function speak(text) {
+      if (!speakToggle.checked || !("speechSynthesis" in window)) return;
+      const utterance = new SpeechSynthesisUtterance(text.replace(/https?:\/\/\S+/g, "link"));
+      utterance.lang = "pt-BR";
+      const voice = speechSynthesis.getVoices().find((v) => (v.lang || "").toLowerCase().startsWith("pt"));
+      if (voice) utterance.voice = voice;
+      utterance.onstart = () => reactor.classList.add("speaking");
+      utterance.onend = () => reactor.classList.remove("speaking");
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utterance);
+    }
+
+    function handle(text) {
+      if (!text.trim()) return;
+      addMessage("you", text.trim());
+      const reply = respond(text);
+      const message = typeof reply === "string" ? reply : reply.text;
+      addMessage("jarvis", message, typeof reply !== "string");
+      speak(message);
+    }
+
+    function remind(message) {
+      const text = `⏰ Lembrete: ${message}.`;
+      addMessage("jarvis", text);
+      speak(text);
+      if ("Notification" in window && Notification.permission === "granted") new Notification("JARVIS", { body: text });
+    }
+
+    document.getElementById("form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      handle(input.value);
+      input.value = "";
+    });
+    document.querySelectorAll(".chip").forEach((chip) => chip.addEventListener("click", () => handle(chip.textContent)));
+    document.querySelectorAll(".copy").forEach((button) =>
+      button.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(button.previousElementSibling.textContent);
+          button.textContent = "Copiado!";
+        } catch {
+          button.textContent = "Selecione e copie";
+        }
+        setTimeout(() => (button.textContent = "Copiar"), 1600);
+      })
+    );
+
+    // microfone (Web Speech API: Chrome e Edge)
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let listening = false;
+
+    function setListening(on) {
+      listening = on;
+      micButton.classList.toggle("on", on);
+      reactor.classList.toggle("listening", on);
+      status.classList.toggle("listening", on);
+      statusText.textContent = on ? "Ouvindo…" : "Online";
+      micButton.setAttribute("aria-label", on ? "Parar de ouvir" : "Falar com o JARVIS");
+    }
+
+    if (Recognition) {
+      recognition = new Recognition();
+      recognition.lang = "pt-BR";
+      recognition.interimResults = true;
+      recognition.addEventListener("result", (event) => {
+        const result = event.results[event.results.length - 1];
+        input.value = result[0].transcript;
+        if (result.isFinal) {
+          handle(result[0].transcript);
+          input.value = "";
+        }
+      });
+      recognition.addEventListener("end", () => setListening(false));
+      recognition.addEventListener("error", (event) => {
+        setListening(false);
+        if (event.error === "not-allowed") addMessage("jarvis", "Preciso de permissão para usar o microfone. Libere no ícone ao lado do endereço do site.", true);
+      });
+      micButton.addEventListener("click", () => {
+        if (listening) { recognition.stop(); return; }
+        speechSynthesis && speechSynthesis.cancel();
+        try { recognition.start(); setListening(true); } catch { setListening(false); }
+      });
+    } else {
+      micButton.disabled = true;
+      micButton.title = "Use o Chrome ou o Edge para falar";
+      document.getElementById("mic-hint").textContent = "Para falar, abra no Chrome ou no Edge.";
+    }
+
+    addMessage("jarvis", "Olá! Eu sou o JARVIS. Clique no microfone e fale, ou digite — por exemplo: “que horas são” ou “toca Legião Urbana”.");
+  </script>
+</body>
+</html>
